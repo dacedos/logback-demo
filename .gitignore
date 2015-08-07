@@ -1,0 +1,7 @@
+# Ignoramos los compilados
+bin/*
+.project
+.classpath
+.settings
+logs/*.log
+logs/archived/*.log

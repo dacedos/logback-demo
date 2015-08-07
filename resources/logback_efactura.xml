@@ -1,0 +1,714 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true" scan="true">
+
+	<jmxConfigurator />
+
+	<!-- StatusListener para mostar los eventos de logback por consola. -->
+	<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+
+	<!-- Raiz de todos los logs... -->
+	<property name="USER_HOME" scope="context"
+		value="/home/efactura/modulos-web/tomcat/logs" />
+
+	<!-- Debe ser backend/frontend, y sirve para agrupar en la misma carpeta 
+		los logs del banco, junto con los trace, error... -->
+	<property name="servidor" scope="context" value="/" />
+
+	<!-- Patron para el rollin, este indica cada dia. -->
+	<!-- Si se quiere comprimir cambiar el .log por .gz -->
+	<!-- Tambien podemos usar el patron "{yyyy-MM-dd_HH}" que seria un fichero 
+		cada hora -->
+	<property name="patronRolling" scope="context" value="{yyyy-MM-dd}" />
+
+	<!-- Indica si se activa el modo prudente para escritura en el mismo fichero 
+		por distintas jvm -->
+	<property name="prudent" scope="context" value="true" />
+
+	<!-- Indica si se escribe directamente en el fichero de log -->
+	<property name="immediateFlush" scope="context" value="false" />
+
+	<!-- Indica el nombre del directorio dentro de cada aplicacion para los 
+		backup, si estos se van a comprimir... Para lo que el patron debe ser .gz 
+		y prudent debe ser false -->
+	<!-- property name="backupDir" value="/backup/" / -->
+	<property name="backupDir" scope="context" value="/" />
+
+	<!-- Maximos historicos que se generan. -->
+	<property name="maxHistory" scope="context" value="14" />
+
+	<!-- Tamaño maximo de un fichero de log. -->
+	<property name="maxFileSize" scope="context" value="50MB" />
+
+	<!-- appender name="LILITH_MUTLIPLEX" class="de.huxhorn.lilith.logback.appender.ClassicMultiplexSocketAppender"> 
+		<Compressing>true</Compressing> <ReconnectionDelay>10000</ReconnectionDelay> 
+		<IncludeCallerData>true</IncludeCallerData> <RemoteHosts>192.168.0.202</RemoteHosts> 
+		</appender> <appender name="LILITH" class="ch.qos.logback.core.FileAppender"> 
+		<file>${USER_HOME}/classic.lilith</file> <encoder class="de.huxhorn.lilith.logback.encoder.ClassicLilithEncoder"> 
+		<IncludeCallerData>true</IncludeCallerData> </encoder> </appender -->
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<!-- On Windows machines setting withJansi to true enables ANSI color code 
+			interpretation by the Jansi library. This requires org.fusesource.jansi:jansi:1.8 
+			on the class path. Note that Unix-based operating systems such as Linux and 
+			Mac OS X support ANSI color codes by default. -->
+		<withJansi>true</withJansi>
+		<encoder>
+			<pattern>%date{HH:mm:ss.SSS} - cn=%contextName - [%X{codBanco}] -
+				[%thread] %highlight(%-5level) %cyan(%logger{15}) - %message %n
+			</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="TRACE" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null)
+					&amp;&amp; (
+					(marker.contains("ASPECTJ")) ||
+					(marker.contains("ASPECTJ_ENTER_WS")) ||
+					(marker.contains("ASPECTJ_TRACE_ENTER")) ||
+					(marker.contains("ASPECTJ_ERP_WS")) ||
+					(marker.contains("SBOX_TRACE")) ||
+					(marker.contains("SOAP")))
+				</expression>
+			</evaluator>
+			<onMatch>DENY</onMatch>
+		</filter>
+		<discriminator
+			class="ch.qos.logback.classic.sift.JNDIBasedContextDiscriminator">
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		<sift>
+			<appender name="TRACE_SIFT"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+					<level>TRACE</level>
+				</filter>
+
+				<prudent>${prudent}</prudent>
+
+				<!-- 5 líneas de stacktrace para las excepciones -->
+				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+					<!--<Pattern>%date %-5level %logger{20} - %.-20M - %L - [%marker][%thread] 
+						- [%X{codBanco}][%X{cifUsuario}] - %message%n %exception</Pattern> -->
+					<Pattern>%date %highlight(%-5level) %blue(%logger{20}) - %.-20M -
+						%L - [%marker][%thread] - [%X{codBanco}][%X{cifUsuario}] -
+						%message%n %exception</Pattern>
+					<!-- this quadruples logging throughput -->
+					<immediateFlush>${immediateFlush}</immediateFlush>
+				</encoder>
+
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<FileNamePattern>${USER_HOME}/${contextName}${backupDir}${contextName}.trace.%d${patronRolling}.%i.log
+					</FileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>${maxFileSize}</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<MaxHistory>${maxHistory}</MaxHistory>
+				</rollingPolicy>
+			</appender>
+		</sift>
+	</appender>
+
+	<appender name="DEBUG" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null)
+					&amp;&amp; (
+					(marker.contains("ASPECTJ_ENTER_WS")) ||
+					(marker.contains("ASPECTJ_TRACE_ENTER")) ||
+					(marker.contains("ASPECTJ_ERP_WS")) ||
+					(marker.contains("SBOX_TRACE")) ||
+					(marker.contains("SOAP")))
+				</expression>
+			</evaluator>
+			<onMatch>DENY</onMatch>
+		</filter>
+		<discriminator
+			class="ch.qos.logback.classic.sift.JNDIBasedContextDiscriminator">
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		<sift>
+			<appender name="DEBUG_SIFT"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+					<level>DEBUG</level>
+				</filter>
+
+				<prudent>${prudent}</prudent>
+
+				<!-- 10 líneas de stacktrace para las excepciones -->
+				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+					<!--<Pattern>%date %-5level %logger{20} - %.-20M - %L - [%marker][%thread] 
+						- [%X{codBanco}][%X{cifUsuario}] - %message%n %exception</Pattern> -->
+					<Pattern>%date %highlight(%-5level) %green(%logger{20}) - %.-20M -
+						%L - [%marker][%thread] - [%X{codBanco}][%X{cifUsuario}] -
+						%message%n %exception</Pattern>
+					<!-- this quadruples logging throughput -->
+					<immediateFlush>${immediateFlush}</immediateFlush>
+				</encoder>
+
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<FileNamePattern>${USER_HOME}/${contextName}${backupDir}${contextName}.debug.%d${patronRolling}.%i.log
+					</FileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>${maxFileSize}</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<MaxHistory>${maxHistory}</MaxHistory>
+				</rollingPolicy>
+			</appender>
+		</sift>
+	</appender>
+
+	<appender name="INFO" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null)
+					&amp;&amp; (
+					(marker.contains("ASPECTJ_ENTER_WS")) ||
+					(marker.contains("ASPECTJ_TRACE_ENTER")) ||
+					(marker.contains("ASPECTJ_ERP_WS")) ||
+					(marker.contains("SBOX_TRACE")) ||
+					(marker.contains("SOAP")))
+				</expression>
+			</evaluator>
+			<onMatch>DENY</onMatch>
+		</filter>
+		<discriminator
+			class="ch.qos.logback.classic.sift.JNDIBasedContextDiscriminator">
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		<sift>
+			<appender name="INFO_SIFT"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+					<level>INFO</level>
+				</filter>
+
+				<prudent>${prudent}</prudent>
+
+				<!-- 5 líneas de stacktrace para las excepciones -->
+				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+					<!--<Pattern>%date %-5level %logger{20} - %.-20M - %L - [%marker][%thread] 
+						- [%X{codBanco}][%X{cifUsuario}] - %message%n %exception</Pattern> -->
+					<Pattern>%date %highlight(%-5level) %yellow(%logger{20}) - %.-20M -
+						%L - [%marker][%thread] - [%X{codBanco}][%X{cifUsuario}] -
+						%message%n %exception</Pattern>
+					<!-- this quadruples logging throughput -->
+					<immediateFlush>${immediateFlush}</immediateFlush>
+				</encoder>
+
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<FileNamePattern>${USER_HOME}/${contextName}${backupDir}${contextName}.info.%d${patronRolling}.%i.log
+					</FileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>${maxFileSize}</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<MaxHistory>${maxHistory}</MaxHistory>
+				</rollingPolicy>
+			</appender>
+		</sift>
+	</appender>
+
+	<appender name="ERROR" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null)
+					&amp;&amp; (
+					(marker.contains("ASPECTJ")))
+				</expression>
+			</evaluator>
+			<onMatch>DENY</onMatch>
+		</filter>
+		<discriminator
+			class="ch.qos.logback.classic.sift.JNDIBasedContextDiscriminator">
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		<sift>
+			<appender name="ERROR_SIFT"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+					<level>ERROR</level>
+				</filter>
+
+				<prudent>${prudent}</prudent>
+
+				<!-- full stacktrace para las excepciones -->
+				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+					<!--<Pattern>%date %-5level %logger{20} - %.-20M - %L - [%marker][%thread] 
+						- [%X{codBanco}][%X{cifUsuario}] - %message%n</Pattern> -->
+					<Pattern>%date %highlight(%-5level) %red(%logger{20}) - %.-20M - %L
+						- [%marker][%thread] - [%X{codBanco}][%X{cifUsuario}] - %message%n
+					</Pattern>
+					<!-- this quadruples logging throughput -->
+					<immediateFlush>${immediateFlush}</immediateFlush>
+				</encoder>
+
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<FileNamePattern>${USER_HOME}/${contextName}${backupDir}${contextName}.error.%d${patronRolling}.%i.log
+					</FileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>${maxFileSize}</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<MaxHistory>${maxHistory}</MaxHistory>
+				</rollingPolicy>
+			</appender>
+		</sift>
+	</appender>
+
+	<appender name="SPRING" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null)
+					&amp;&amp; (
+					(marker.contains("ASPECTJ")) ||
+					(marker.contains("ASPECTJ_ENTER_WS")) ||
+					(marker.contains("ASPECTJ_ERP_WS")) ||
+					(marker.contains("SOAP")))
+				</expression>
+			</evaluator>
+			<onMatch>DENY</onMatch>
+		</filter>
+		<discriminator
+			class="ch.qos.logback.classic.sift.JNDIBasedContextDiscriminator">
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		<sift>
+			<appender name="SPRING_SIFT"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+					<level>TRACE</level>
+				</filter>
+
+				<prudent>${prudent}</prudent>
+
+				<!-- full stacktrace para las excepciones -->
+				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+					<Pattern>%date %-5level %logger{20} - %.-20M - %L - [%thread] -
+						[%X{codBanco}][%X{cifUsuario}] - %message%n</Pattern>
+					<!-- this quadruples logging throughput -->
+					<immediateFlush>${immediateFlush}</immediateFlush>
+				</encoder>
+
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<FileNamePattern>${USER_HOME}/${contextName}${backupDir}${contextName}.spring.%d${patronRolling}.%i.log
+					</FileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy
+						cleanHistoryOnStart="true"
+						class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>${maxFileSize}</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<MaxHistory>${maxHistory}</MaxHistory>
+				</rollingPolicy>
+			</appender>
+		</sift>
+	</appender>
+
+	<appender name="SOAP"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null) &amp;&amp; (marker.contains("SOAP"))
+				</expression>
+			</evaluator>
+			<onMatch>ACCEPT</onMatch>
+		</filter>
+
+		<prudent>${prudent}</prudent>
+
+		<!-- full stacktrace para las excepciones -->
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>%date %-5level - cn=%contextName - [%thread] -
+				[%X{codBanco}][%X{cifUsuario}] - %message%n</Pattern>
+			<!-- this quadruples logging throughput -->
+			<immediateFlush>${immediateFlush}</immediateFlush>
+		</encoder>
+
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<FileNamePattern>${USER_HOME}/${backupDir}soap.%d${patronRolling}.%i.log
+			</FileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+				cleanHistoryOnStart="true"
+				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>${maxFileSize}</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+			<MaxHistory>${maxHistory}</MaxHistory>
+		</rollingPolicy>
+	</appender>
+
+	<appender name="OB10"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					((marker != null) &amp;&amp; (marker.contains("OB10")))
+				</expression>
+			</evaluator>
+			<OnMatch>ACCEPT</OnMatch>
+		</filter>
+
+		<prudent>${prudent}</prudent>
+
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>%date %-5level %logger{20} - %.-20M - %L - cn=%contextName -
+				[%thread] - [%X{codBanco}][%X{cifUsuario}] - %message%n</Pattern>
+			<!-- this quadruples logging throughput -->
+			<immediateFlush>${immediateFlush}</immediateFlush>
+		</encoder>
+
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<FileNamePattern>${USER_HOME}/logs/send_receive.%d${patronRolling}.%i.log.gz
+			</FileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>${maxFileSize}</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+		</rollingPolicy>
+	</appender>
+
+	<appender name="LOPD"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null) &amp;&amp; (marker.contains("LOPD"))
+				</expression>
+			</evaluator>
+		</filter>
+
+		<prudent>${prudent}</prudent>
+
+		<!-- full stacktrace para las excepciones -->
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>%date %-5level - cn=%contextName - [%thread] -
+				[%X{codBanco}][%X{cifUsuario}] - %message%n</Pattern>
+			<!-- this quadruples logging throughput -->
+			<immediateFlush>${immediateFlush}</immediateFlush>
+		</encoder>
+
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<FileNamePattern>${USER_HOME}/${backupDir}lopd.%d${patronRolling}.%i.log
+			</FileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+				cleanHistoryOnStart="true"
+				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>${maxFileSize}</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+			<MaxHistory>${maxHistory}</MaxHistory>
+		</rollingPolicy>
+	</appender>
+
+	<appender name="CODBANCO_APPENDER" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null)
+					&amp;&amp; (
+					(marker.contains("ASPECTJ")) ||
+					(marker.contains("ASPECTJ_ENTER_WS")) ||
+					(marker.contains("ASPECTJ_TRACE_ENTER")) ||
+					(marker.contains("ASPECTJ_ERP_WS")) ||
+					(marker.contains("SBOX_TRACE")) ||
+					(marker.contains("SOAP")))
+				</expression>
+			</evaluator>
+			<onMatch>DENY</onMatch>
+		</filter>
+		<discriminator>
+			<Key>codBanco</Key>
+			<DefaultValue>0000</DefaultValue>
+		</discriminator>
+		<sift>
+			<appender name="FILE-${codBanco}"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<prudent>${prudent}</prudent>
+
+				<!-- 5 líneas de stacktrace para las excepciones -->
+				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+					<Pattern>%date - [%thread] - %.-20M - %L - cn=%contextName -
+						[%thread] - [%X{codBanco}][%X{cifUsuario}] - %message%n
+						%exception{5}</Pattern>
+					<!-- this quadruples logging throughput -->
+					<immediateFlush>${immediateFlush}</immediateFlush>
+				</encoder>
+
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<FileNamePattern>${USER_HOME}/${backupDir}${servidor}${codBanco}.%d${patronRolling}.%i.log.gz
+					</FileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy
+						cleanHistoryOnStart="true"
+						class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>${maxFileSize}</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<MaxHistory>${maxHistory}</MaxHistory>
+				</rollingPolicy>
+			</appender>
+		</sift>
+	</appender>
+
+	<appender name="CIF_APPENDER" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null)
+					&amp;&amp; (
+					(marker.contains("ASPECTJ")) ||
+					(marker.contains("ASPECTJ_ENTER_WS")) ||
+					(marker.contains("ASPECTJ_TRACE_ENTER")) ||
+					(marker.contains("ASPECTJ_ERP_WS")) ||
+					(marker.contains("SBOX_TRACE")) ||
+					(marker.contains("SOAP")))
+				</expression>
+			</evaluator>
+			<onMatch>DENY</onMatch>
+		</filter>
+		<discriminator>
+			<Key>cif</Key>
+			<DefaultValue>000000000</DefaultValue>
+		</discriminator>
+		<sift>
+			<appender name="FILE-${cif}"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<!-- Modo prudente a false, porque esta activa la compresion... -->
+				<prudent>true</prudent>
+
+				<!-- 5 líneas de stacktrace para las excepciones -->
+				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+					<Pattern>%date - [%thread] - [%X{codBanco}] - %message%n
+						%exception{5}</Pattern>
+					<!-- this quadruples logging throughput -->
+					<immediateFlush>${immediateFlush}</immediateFlush>
+				</encoder>
+
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<FileNamePattern>${USER_HOME}/cifs/${backupDir}${servidor}cifs/${cif}.%d${patronRolling}.%i.gz
+					</FileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy
+						cleanHistoryOnStart="true"
+						class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>${maxFileSize}</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<MaxHistory>${maxHistory}</MaxHistory>
+				</rollingPolicy>
+			</appender>
+		</sift>
+	</appender>
+
+	<appender name="ASPECTJ_TRACE_ENTER"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null) &amp;&amp; (marker.contains("ASPECTJ_TRACE_ENTER"))
+				</expression>
+			</evaluator>
+			<OnMatch>ACCEPT</OnMatch>
+		</filter>
+
+		<prudent>${prudent}</prudent>
+
+		<!-- full stacktrace para las excepciones -->
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>%date %-5level - cn=%contextName - [%thread] -
+				[%X{codBanco}][%X{cifUsuario}] - %message%n</Pattern>
+			<!-- this quadruples logging throughput -->
+			<immediateFlush>${immediateFlush}</immediateFlush>
+		</encoder>
+
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<FileNamePattern>${USER_HOME}/${backupDir}aspectj.enter_exit.%d${patronRolling}.%i.log
+			</FileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+				cleanHistoryOnStart="true"
+				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>${maxFileSize}</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+			<MaxHistory>${maxHistory}</MaxHistory>
+		</rollingPolicy>
+	</appender>
+
+
+	<appender name="ASPECTJ_ENTER_WS"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null) &amp;&amp; (marker.contains("ASPECTJ_ENTER_WS"))
+				</expression>
+			</evaluator>
+			<OnMatch>ACCEPT</OnMatch>
+		</filter>
+
+		<!-- Modo prudente a false, porque esta activa la compresion... -->
+		<prudent>false</prudent>
+
+		<!-- full stacktrace para las excepciones -->
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>%date %-5level - cn=%contextName - [%thread] -
+				[%X{codBanco}][%X{cifUsuario}] - %message%n</Pattern>
+			<!-- this quadruples logging throughput -->
+			<immediateFlush>${immediateFlush}</immediateFlush>
+		</encoder>
+
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<!-- Al generarse por aspectos, vemos si hay problemas en la compresion... -->
+			<FileNamePattern>${USER_HOME}/${backupDir}aspectj.enter_exit_ws.%d${patronRolling}.%i.log.gz
+			</FileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+				cleanHistoryOnStart="true"
+				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>${maxFileSize}</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+			<MaxHistory>${maxHistory}</MaxHistory>
+		</rollingPolicy>
+	</appender>
+
+	<appender name="ASPECTJ_ERP_WS"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null) &amp;&amp; (marker.contains("ASPECTJ_ERP_WS"))
+				</expression>
+			</evaluator>
+			<OnMatch>ACCEPT</OnMatch>
+		</filter>
+
+		<prudent>${prudent}</prudent>
+
+		<!-- full stacktrace para las excepciones -->
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>%date %-5level - cn=%contextName - [%thread] -
+				[%X{codBanco}][%X{cifUsuario}] - %message%n</Pattern>
+			<!-- this quadruples logging throughput -->
+			<immediateFlush>${immediateFlush}</immediateFlush>
+		</encoder>
+
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<FileNamePattern>${USER_HOME}/${backupDir}.aspectj_erp_ws.%d${patronRolling}.%i.log
+			</FileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+				cleanHistoryOnStart="true"
+				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>${maxFileSize}</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+			<MaxHistory>${maxHistory}</MaxHistory>
+		</rollingPolicy>
+	</appender>
+
+	<appender name="ASPECTJ_ALL" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<discriminator
+			class="ch.qos.logback.classic.sift.JNDIBasedContextDiscriminator">
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		<sift>
+			<appender name="ASPECTJ_ALL_SIFT"
+				class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+					<level>TRACE</level>
+				</filter>
+
+				<prudent>${prudent}</prudent>
+
+				<!-- full stacktrace para las excepciones -->
+				<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+					<Pattern>%date %-5level %logger{20} - %.-20M - %L - cn=%contextName
+						- [%thread] - [%X{codBanco}][%X{cifUsuario}] - %message%n
+					</Pattern>
+					<!-- this quadruples logging throughput -->
+					<immediateFlush>${immediateFlush}</immediateFlush>
+				</encoder>
+
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<FileNamePattern>${USER_HOME}/${contextName}${backupDir}${contextName}.aspectj_all.%d${patronRolling}.%i.log
+					</FileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy
+						cleanHistoryOnStart="true"
+						class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>${maxFileSize}</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<MaxHistory>${maxHistory}</MaxHistory>
+				</rollingPolicy>
+			</appender>
+		</sift>
+	</appender>
+
+	<appender name="SBOX_TRACE"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+				<expression>
+					(marker != null) &amp;&amp; (marker.contains("SBOX_TRACE"))
+				</expression>
+			</evaluator>
+		</filter>
+
+		<prudent>${prudent}</prudent>
+
+		<!-- full stacktrace para las excepciones -->
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>%date %-5level - cn=%contextName - [%thread] -
+				[%X{codBanco}][%X{cifUsuario}] - %message%n</Pattern>
+			<!-- this quadruples logging throughput -->
+			<immediateFlush>${immediateFlush}</immediateFlush>
+		</encoder>
+
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<FileNamePattern>${USER_HOME}/${backupDir}sbox.%d${patronRolling}.%i.log
+			</FileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+				cleanHistoryOnStart="true"
+				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<maxFileSize>${maxFileSize}</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+			<MaxHistory>${maxHistory}</MaxHistory>
+		</rollingPolicy>
+	</appender>
+
+
+
+	<!-- <logger level="TRACE" name="org.apache.axis"> <appender-ref ref="SPRING"/> 
+		</logger> <logger level="TRACE" name="org.springframework.security"> <appender-ref 
+		ref="SPRING"/> </logger> <logger level="ERROR" name="org.springframework.web.context.support"> 
+		<appender-ref ref="SPRING"/> </logger> <logger level="ERROR" name="org.springframework.beans.factory.support"> 
+		<appender-ref ref="SPRING"/> </logger> <logger level="TRACE" name="eurobits.efactura.server.frontend.handler"> 
+		<appender-ref ref="SOAP"/> </logger> -->
+
+	<logger level="TRACE" name="eurobits.efactura">
+		<appender-ref ref="TRACE" />
+	</logger>
+
+	<root level="ERROR">
+		<!-- appender-ref ref="LILITH_MUTLIPLEX" /> <appender-ref ref="LILITH" 
+			/> <appender-ref ref="STDOUT"/> -->
+
+		<appender-ref ref="TRACE" />
+		<!-- <appender-ref ref="DEBUG"/> <appender-ref ref="INFO"/> <appender-ref 
+			ref="ERROR"/> -->
+
+		<!-- Grupo de marker definidos: SBOX_TRACE (sbox) - Trazas generadas por 
+			la sbox ASPECTJ (aspectj) - Entrada y salida de los metodos... pero con solo 
+			el nombre de la clase... ASPECTJ_TRACE_ENTER (aspectj) - Entrada y salida 
+			de los metodos.... ASPECTJ_ENTER_WS (aspectj) - Entrada y salida de los WS 
+			ASPECTJ_ERP_WS (aspectj - redirector erp) Entrada y salida de los WS del 
+			redirector de ERP MANUAL_TRACE (erp) - Mejora de las trazas para la emision 
+			via ERP... SOAP (trazas dentro de axis) OB10 (emision a ob10) LOPD (logs 
+			para la lopd) EAF (Proceso de firma para la entidad adscrita) -->
+		<!-- <appender-ref ref="SBOX_TRACE"/> <appender-ref ref="ASPECTJ"/> <appender-ref 
+			ref="ASPECTJ_ENTER_WS"/> <appender-ref ref="ASPECTJ_ERP_WS"/> <appender-ref 
+			ref="ASPECTJ_ALL"/> <appender-ref ref="MANUAL_TRACE"/> <appender-ref ref="SOAP"/> 
+			<appender-ref ref="OB10"/> <appender-ref ref="LOPD"/> <appender-ref ref="SPRING"/> 
+			<appender-ref ref="CODBANCO_APPENDER"/> <appender-ref ref="CIF_APPENDER"/> -->
+
+	</root>
+</configuration>

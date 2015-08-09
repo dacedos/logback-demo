@@ -29,6 +29,11 @@ public class LogbackSample {
             logger.debug(siftLabel + " - " + System.currentTimeMillis());
         }
 
+        logger.debug(" - " + System.currentTimeMillis());
+        logger.debug("Dani - " + System.currentTimeMillis());
+        logger.debug("DANI - " + System.currentTimeMillis());
+        logger.debug("dani - " + System.currentTimeMillis());
+        
     }
 
 }

@@ -73,7 +73,6 @@
 		</sift>
 	</appender>
 
-
 	<!-- EVALUATOR -->
 	<appender name="EVALUATOR" class="ch.qos.logback.core.FileAppender">
 		<file>${LOG_DIR}/evaluator.log</file>
@@ -94,7 +93,6 @@
 	<!-- Send logs to console, file and sift depending on siftLabel -->
 	<logger name="es.eurobits.samples.logback" level="debug"
 		additivity="false">
-		<appender-ref ref="EVALUATOR" />
 		<appender-ref ref="FILE" />
 		<appender-ref ref="STDOUT" />
 		<appender-ref ref="SIFT" />

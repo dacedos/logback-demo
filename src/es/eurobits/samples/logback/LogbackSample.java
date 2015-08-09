@@ -30,9 +30,9 @@ public class LogbackSample {
         }
 
         logger.debug(" - " + System.currentTimeMillis());
-        logger.debug("Dani - " + System.currentTimeMillis());
-        logger.debug("DANI - " + System.currentTimeMillis());
-        logger.debug("dani - " + System.currentTimeMillis());
+        logger.debug("Traza 1 - " + System.currentTimeMillis());
+        logger.debug("Traza 2 - " + System.currentTimeMillis());
+        logger.debug("Traza Evaluator - " + System.currentTimeMillis());
         
     }
 

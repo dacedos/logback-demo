@@ -5,12 +5,12 @@
 		value="/home/acedos/workspace_efactura/LogbackExample/logs" />
 
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-		<layout class="ch.qos.logback.classic.PatternLayout">
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
 			<Pattern>
 				%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} -
 				%msg%n
 			</Pattern>
-		</layout>
+		</encoder>
 	</appender>
 
 	<appender name="FILE"
@@ -33,7 +33,7 @@
 		</rollingPolicy>
 	</appender>
 
-	<appender name="FILE-ERROR"
+	<appender name="ERROR"
 		class="ch.qos.logback.core.rolling.RollingFileAppender">
 		<file>${LOG_DIR}/error.log</file>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -85,7 +85,7 @@
 		</filter>
 		<encoder>
 			<pattern>
-				%-4relative [%thread] %-5level %logger - %msg%n
+				<pattern>%d [%thread] %level %mdc %logger{35} - %msg%n</pattern>
 			</pattern>
 		</encoder>
 	</appender>
@@ -100,7 +100,7 @@
 	</logger>
 
 	<root level="error">
-		<appender-ref ref="FILE-ERROR" />
+		<appender-ref ref="ERROR" />
 	</root>
 
 </configuration>

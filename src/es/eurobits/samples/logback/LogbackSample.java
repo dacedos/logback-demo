@@ -9,6 +9,12 @@ public class LogbackSample {
 
         Logger logger = LoggerFactory.getLogger("es.eurobits.samples.logback");
 
+        logger.debug("Traza 1 - " + System.currentTimeMillis());
+        logger.debug("Traza 2 - " + System.currentTimeMillis());
+        logger.debug("Traza Evaluator - " + System.currentTimeMillis());
+
+        logger.error("ERROR!");
+
         for (int i = 0; i < 10; i++) {
             logger.debug(" - " + System.currentTimeMillis());
         }
@@ -29,11 +35,6 @@ public class LogbackSample {
             logger.debug(siftLabel + " - " + System.currentTimeMillis());
         }
 
-        logger.debug(" - " + System.currentTimeMillis());
-        logger.debug("Traza 1 - " + System.currentTimeMillis());
-        logger.debug("Traza 2 - " + System.currentTimeMillis());
-        logger.debug("Traza Evaluator - " + System.currentTimeMillis());
-        
     }
 
 }
